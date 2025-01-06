@@ -52,7 +52,7 @@ module.exports = {
           name: role.name,
           color: role.color,
           hoist: role.hoist,
-          permissions: role.permissions.bitfield.toString(), // Convertir BigInt a string
+          permissions: role.permissions.bitfield.toString(),
           position: role.position
         });
 
@@ -70,11 +70,11 @@ module.exports = {
         const categoryData = {
           name: category.name,
           position: category.position,
-          permissions: category.permissionOverwrites.cache.map(perm => ({
+          permissions: Array.from(category.permissionOverwrites.cache.values()).map(perm => ({
             id: perm.id,
             type: perm.type,
-            allow: perm.allow.bitfield.toString(), // Convertir BigInt a string
-            deny: perm.deny.bitfield.toString() // Convertir BigInt a string
+            allow: perm.allow.bitfield.toString(),
+            deny: perm.deny.bitfield.toString()
           })),
           channels: []
         };
@@ -86,11 +86,11 @@ module.exports = {
             type: channel.type,
             position: channel.position,
             topic: channel.topic,
-            permissions: channel.permissionOverwrites.cache.map(perm => ({
+            permissions: Array.from(channel.permissionOverwrites.cache.values()).map(perm => ({
               id: perm.id,
               type: perm.type,
-              allow: perm.allow.bitfield.toString(), // Convertir BigInt a string
-              deny: perm.deny.bitfield.toString() // Convertir BigInt a string
+              allow: perm.allow.bitfield.toString(),
+              deny: perm.deny.bitfield.toString()
             }))
           });
 
@@ -111,17 +111,6 @@ module.exports = {
       const finalEmbed = createServerCopyEmbed(name, serverData, timeElapsed);
       await interaction.editReply({ embeds: [finalEmbed] });
 
-      // Mensaje en el primer canal disponible
-      const firstChannel = guild.channels.cache
-        .filter(channel => channel.type === 0)
-        .first();
-
-      if (firstChannel) {
-        const publicEmbed = createServerCopyEmbed(name, serverData, timeElapsed)
-          .setDescription(`${EMOJIS.SUCCESS} Se ha realizado una copia del servidor exitosamente.`);
-
-        await firstChannel.send({ embeds: [publicEmbed] });
-      }
     } catch (error) {
       console.error(error);
       const errorEmbed = createErrorEmbed(

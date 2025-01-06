@@ -25,7 +25,7 @@ module.exports = {
         );
         return await interaction.reply({ 
           embeds: [errorEmbed], 
-          flags: { ephemeral: true }
+          ephemeral: true 
         });
       }
 
@@ -45,23 +45,25 @@ module.exports = {
             )
         );
 
-      await interaction.reply({
+      const reply = await interaction.reply({
         embeds: [embed],
         components: [selectMenu],
-        flags: { ephemeral: true }
+        ephemeral: true,
+        fetchReply: true
       });
 
-      try {
-        const filter = i => i.customId === 'select_server' && i.user.id === interaction.user.id;
-        const response = await interaction.channel.awaitMessageComponent({ 
-          filter, 
-          time: 60000 
-        });
+      const filter = i => i.customId === 'select_server' && i.user.id === interaction.user.id;
+      const collector = reply.createMessageComponentCollector({ filter, time: 60000 });
 
-        if (response) {
-          await response.deferUpdate();
-          const selectedServer = servers.find(s => s.id.toString() === response.values[0]);
-          const serverData = JSON.parse(selectedServer.server_data);
+      collector.on('collect', async i => {
+        try {
+          await i.deferUpdate();
+          const selectedServer = servers.find(s => s.id.toString() === i.values[0]);
+          
+          const serverData = typeof selectedServer.server_data === 'string' 
+            ? JSON.parse(selectedServer.server_data)
+            : selectedServer.server_data;
+
           const guild = interaction.guild;
 
           const progressEmbed = createProgressEmbed(
@@ -69,7 +71,7 @@ module.exports = {
             `${EMOJIS.LOADING} Eliminando configuración actual...`
           );
           
-          await interaction.editReply({ 
+          await i.editReply({ 
             embeds: [progressEmbed],
             components: []
           });
@@ -150,45 +152,39 @@ module.exports = {
           }
 
           const completionEmbed = createServerRestoreEmbed(selectedServer.name, serverData);
-          await interaction.editReply({ 
-            embeds: [completionEmbed],
-            components: []
-          });
+          await i.editReply({ embeds: [completionEmbed] });
+        } catch (error) {
+          console.error(error);
+          const errorEmbed = createErrorEmbed(
+            'Error al Restaurar',
+            'Se produjo un error al restaurar la configuración del servidor.'
+          );
+          await i.editReply({ embeds: [errorEmbed], components: [] });
         }
-      } catch (error) {
-        if (error.code === 'INTERACTION_COLLECTOR_ERROR') {
+      });
+
+      collector.on('end', collected => {
+        if (collected.size === 0) {
           const timeoutEmbed = createErrorEmbed(
             'Tiempo Agotado',
             'Se agotó el tiempo para seleccionar un servidor.'
           );
-          await interaction.editReply({
+          interaction.editReply({
             embeds: [timeoutEmbed],
             components: []
-          });
-        } else {
-          throw error;
+          }).catch(console.error);
         }
-      }
+      });
     } catch (error) {
-      console.error('Error en comando paste:', error);
+      console.error(error);
       const errorEmbed = createErrorEmbed(
         'Error',
         'Se produjo un error al procesar tu solicitud.'
       );
-      try {
-        if (!interaction.replied) {
-          await interaction.reply({ 
-            embeds: [errorEmbed], 
-            flags: { ephemeral: true }
-          });
-        } else {
-          await interaction.editReply({ 
-            embeds: [errorEmbed],
-            components: []
-          });
-        }
-      } catch (e) {
-        console.error('Error al enviar mensaje de error:', e);
+      if (!interaction.replied) {
+        await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+      } else {
+        await interaction.editReply({ embeds: [errorEmbed] });
       }
     }
   },

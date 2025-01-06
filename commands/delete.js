@@ -22,7 +22,7 @@ module.exports = {
           'No hay servidores guardados',
           'No se encontraron configuraciones de servidor para eliminar.'
         );
-        return interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+        return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
       }
 
       const embed = createServerListEmbed('delete');
@@ -90,7 +90,7 @@ module.exports = {
         'Error',
         'Se produjo un error al procesar tu solicitud.'
       );
-      await interaction.editReply({ embeds: [errorEmbed] });
+      await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
     }
   },
 };

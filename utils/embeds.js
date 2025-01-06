@@ -1,12 +1,10 @@
 const { EmbedBuilder } = require('discord.js');
 
 const COLORS = {
-  PRIMARY: '#5865F2',   // Discord Blurple
-  SUCCESS: '#57F287',   // Verde vibrante
-  ERROR: '#ED4245',     // Rojo suave
-  WARNING: '#FEE75C',   // Amarillo
-  INFO: '#5865F2',      // Azul Discord
-  PROGRESS: '#5865F2'   // Azul proceso
+  SUCCESS: 0x57F287,
+  ERROR: 0xED4245,
+  INFO: 0x5865F2,
+  WARNING: 0xFEE75C
 };
 
 const EMOJIS = {
@@ -16,31 +14,19 @@ const EMOJIS = {
   INFO: 'ℹ️',
   LOADING: '⏳',
   SERVER: '🏰',
-  ROLES: '👑',
+  ROLES: '👥',
   CHANNELS: '📝',
   CATEGORY: '📁',
-  TIME: '⏰',
-  TRASH: '🗑️',
-  SAVE: '💾',
-  PASTE: '📋'
+  TIME: '🕒',
+  TRASH: '🗑️'
 };
 
-function createProgressEmbed(title, description, progress) {
+function createProgressEmbed(title, description) {
   return new EmbedBuilder()
-    .setColor(COLORS.PROGRESS)
-    .setTitle(`${EMOJIS.LOADING} ${title}`)
+    .setColor(COLORS.INFO)
+    .setTitle(title)
     .setDescription(description)
-    .setTimestamp()
-    .setFooter({ text: 'Procesando...' });
-}
-
-function createSuccessEmbed(title, description) {
-  return new EmbedBuilder()
-    .setColor(COLORS.SUCCESS)
-    .setTitle(`${EMOJIS.SUCCESS} ${title}`)
-    .setDescription(description)
-    .setTimestamp()
-    .setFooter({ text: '¡Operación completada con éxito!' });
+    .setTimestamp();
 }
 
 function createErrorEmbed(title, description) {
@@ -52,76 +38,192 @@ function createErrorEmbed(title, description) {
     .setFooter({ text: 'Se produjo un error' });
 }
 
-function createServerCopyEmbed(name, data, timeElapsed) {
+function createServerCopyEmbed(name, serverData, timeElapsed) {
+  const totalChannels = serverData.categories.reduce((acc, cat) => acc + cat.channels.length, 0);
+
   return new EmbedBuilder()
     .setColor(COLORS.SUCCESS)
-    .setTitle(`${EMOJIS.SUCCESS} ¡Servidor Copiado Exitosamente!`)
+    .setTitle(`${EMOJIS.SUCCESS} Copia Completada: ${name}`)
+    .setDescription('La configuración del servidor ha sido guardada exitosamente.')
     .addFields(
-      { name: `${EMOJIS.SERVER} Nombre de la copia`, value: `\`${name}\``, inline: false },
-      { name: `${EMOJIS.ROLES} Roles`, value: `\`${data.roles.length}\` roles copiados`, inline: true },
-      { name: `${EMOJIS.CATEGORY} Categorías`, value: `\`${data.categories.length}\` categorías`, inline: true },
-      { name: `${EMOJIS.CHANNELS} Canales`, value: `\`${data.categories.reduce((acc, cat) => acc + cat.channels.length, 0)}\` canales`, inline: true },
-      { name: `${EMOJIS.TIME} Tiempo total`, value: `\`${timeElapsed}\` segundos`, inline: false }
+      {
+        name: `${EMOJIS.SERVER} Información del Servidor`,
+        value: `**Nombre:** ${serverData.name}`,
+        inline: false
+      },
+      {
+        name: `${EMOJIS.ROLES} Roles Copiados`,
+        value: `${serverData.roles.length} roles`,
+        inline: true
+      },
+      {
+        name: `${EMOJIS.CATEGORY} Categorías`,
+        value: `${serverData.categories.length} categorías`,
+        inline: true
+      },
+      {
+        name: `${EMOJIS.CHANNELS} Canales`,
+        value: `${totalChannels} canales`,
+        inline: true
+      },
+      {
+        name: '⏱️ Tiempo de Proceso',
+        value: `${timeElapsed} segundos`,
+        inline: false
+      }
     )
     .setTimestamp()
-    .setFooter({ text: '¡Copia completada!' });
+    .setFooter({ text: 'Usa /paste para restaurar esta configuración' });
 }
 
-function createServerListEmbed(action = 'paste') {
+function createServerRestoreEmbed(name, serverData) {
+  const totalChannels = serverData.categories.reduce((acc, cat) => acc + cat.channels.length, 0);
+
+  return new EmbedBuilder()
+    .setColor(COLORS.SUCCESS)
+    .setTitle(`${EMOJIS.SUCCESS} Restauración Completada`)
+    .setDescription(`La configuración "${name}" ha sido restaurada exitosamente.`)
+    .addFields(
+      {
+        name: `${EMOJIS.ROLES} Roles Restaurados`,
+        value: `${serverData.roles.length} roles`,
+        inline: true
+      },
+      {
+        name: `${EMOJIS.CATEGORY} Categorías`,
+        value: `${serverData.categories.length} categorías`,
+        inline: true
+      },
+      {
+        name: `${EMOJIS.CHANNELS} Canales`,
+        value: `${totalChannels} canales`,
+        inline: true
+      }
+    )
+    .setTimestamp()
+    .setFooter({ text: 'Restauración completada' });
+}
+
+function createServerListEmbed(action) {
   const titles = {
-    paste: 'Restaurar Configuración de Servidor',
-    delete: 'Eliminar Configuración Guardada'
+    'delete': '🗑️ Eliminar Configuración',
+    'paste': '📋 Restaurar Configuración'
   };
-  
+
   const descriptions = {
-    paste: 'Selecciona el servidor que deseas restaurar',
-    delete: 'Selecciona el servidor que deseas eliminar'
-  };
-  
-  const emojis = {
-    paste: EMOJIS.PASTE,
-    delete: EMOJIS.TRASH
+    'delete': 'Selecciona la configuración que deseas eliminar',
+    'paste': 'Selecciona la configuración que deseas restaurar'
   };
 
   return new EmbedBuilder()
-    .setColor(action === 'paste' ? COLORS.PRIMARY : COLORS.ERROR)
-    .setTitle(`${emojis[action]} ${titles[action]}`)
+    .setColor(COLORS.INFO)
+    .setTitle(titles[action])
     .setDescription(descriptions[action])
-    .setTimestamp()
-    .setFooter({ text: action === 'paste' ? 'Selecciona un servidor para restaurar' : 'Selecciona un servidor para eliminar' });
-}
-
-function createServerRestoreEmbed(name, data) {
-  return new EmbedBuilder()
-    .setColor(COLORS.SUCCESS)
-    .setTitle(`${EMOJIS.SUCCESS} ¡Servidor Restaurado Exitosamente!`)
-    .addFields(
-      { name: `${EMOJIS.SERVER} Configuración restaurada`, value: `\`${name}\``, inline: false },
-      { name: `${EMOJIS.ROLES} Roles`, value: `\`${data.roles.length}\` roles creados`, inline: true },
-      { name: `${EMOJIS.CATEGORY} Categorías`, value: `\`${data.categories.length}\` categorías`, inline: true },
-      { name: `${EMOJIS.CHANNELS} Canales`, value: `\`${data.categories.reduce((acc, cat) => acc + cat.channels.length, 0)}\` canales`, inline: true }
-    )
-    .setTimestamp()
-    .setFooter({ text: '¡Restauración completada!' });
+    .setTimestamp();
 }
 
 function createServerDeletedEmbed(name) {
   return new EmbedBuilder()
     .setColor(COLORS.SUCCESS)
     .setTitle(`${EMOJIS.SUCCESS} Configuración Eliminada`)
-    .setDescription(`La configuración del servidor **${name}** ha sido eliminada exitosamente.`)
+    .setDescription(`La configuración "${name}" ha sido eliminada exitosamente.`)
     .setTimestamp()
-    .setFooter({ text: '¡Eliminación completada!' });
+    .setFooter({ text: 'Eliminación completada' });
+}
+
+function createServerListDetailedEmbed(servers) {
+  const embed = new EmbedBuilder()
+    .setColor(COLORS.INFO)
+    .setTitle(`${EMOJIS.SERVER} Copias de Servidor Guardadas`)
+    .setDescription('Lista detallada de todas las configuraciones guardadas.')
+    .setTimestamp();
+
+  servers.forEach((server, index) => {
+    const data = server.server_data;
+    const totalChannels = data.categories.reduce((acc, cat) => acc + cat.channels.length, 0);
+    
+    embed.addFields({
+      name: `${index + 1}. ${server.name}`,
+      value: [
+        `${EMOJIS.ROLES} **Roles:** ${data.roles.length}`,
+        `${EMOJIS.CATEGORY} **Categorías:** ${data.categories.length}`,
+        `${EMOJIS.CHANNELS} **Canales:** ${totalChannels}`,
+        `${EMOJIS.TIME} **Creado:** ${new Date(server.created_at).toLocaleString()}`,
+        '─────────────────'
+      ].join('\n')
+    });
+  });
+
+  embed.setFooter({ 
+    text: `Total de copias: ${servers.length}` 
+  });
+
+  return embed;
+}
+
+function createServerInfoEmbed(server, data) {
+  const totalChannels = data.categories.reduce((acc, cat) => acc + cat.channels.length, 0);
+  
+  const embed = new EmbedBuilder()
+    .setColor(COLORS.INFO)
+    .setTitle(`${EMOJIS.INFO} Información de Copia: ${server.name}`)
+    .setDescription('Detalles completos de la configuración guardada.')
+    .addFields(
+      {
+        name: `${EMOJIS.SERVER} Información General`,
+        value: [
+          `**Nombre:** ${data.name}`,
+          `**Creado:** ${new Date(server.created_at).toLocaleString()}`,
+          `**ID:** ${server.id}`,
+          '─────────────────'
+        ].join('\n'),
+        inline: false
+      },
+      {
+        name: `${EMOJIS.ROLES} Roles (${data.roles.length})`,
+        value: data.roles.length > 0 
+          ? data.roles.slice(0, 10).map(r => `• ${r.name}`).join('\n') + 
+            (data.roles.length > 10 ? '\n*...y más roles*' : '')
+          : 'No hay roles',
+        inline: true
+      },
+      {
+        name: `${EMOJIS.CATEGORY} Estructura (${data.categories.length} categorías)`,
+        value: data.categories.length > 0
+          ? data.categories.slice(0, 10).map(c => 
+              `• ${c.name} (${c.channels.length} canales)`
+            ).join('\n') + 
+            (data.categories.length > 10 ? '\n*...y más categorías*' : '')
+          : 'No hay categorías',
+        inline: true
+      }
+    )
+    .addFields({
+      name: '📊 Resumen',
+      value: [
+        `${EMOJIS.ROLES} **Total Roles:** ${data.roles.length}`,
+        `${EMOJIS.CATEGORY} **Total Categorías:** ${data.categories.length}`,
+        `${EMOJIS.CHANNELS} **Total Canales:** ${totalChannels}`
+      ].join('\n'),
+      inline: false
+    })
+    .setTimestamp()
+    .setFooter({ 
+      text: 'Usa /paste para restaurar esta configuración' 
+    });
+
+  return embed;
 }
 
 module.exports = {
+  COLORS,
+  EMOJIS,
   createProgressEmbed,
-  createSuccessEmbed,
   createErrorEmbed,
   createServerCopyEmbed,
-  createServerListEmbed,
   createServerRestoreEmbed,
+  createServerListEmbed,
   createServerDeletedEmbed,
-  COLORS,
-  EMOJIS
+  createServerListDetailedEmbed,
+  createServerInfoEmbed
 };
