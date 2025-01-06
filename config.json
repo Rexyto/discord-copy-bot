@@ -1,0 +1,19 @@
+{
+  "clientId": "TU_ID_DEL_BOT",
+  "token": "TU_TOKEN_DEL_BOT",
+  "database": {
+    "host": "localhost",
+    "user": "root",
+    "password": "tu_contraseña",
+    "database": "discord_copy_bot",
+    "port": 3306,
+    "connectionLimit": 10
+  },
+  "settings": {
+    "prefix": "!",
+    "language": "es",
+    "timezone": "UTC",
+    "maxBackups": 10,
+    "backupRetention": 30
+  }
+}
