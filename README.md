@@ -140,10 +140,7 @@ node deploy-commands.js
 7. **Inicia el Bot**
 ```bash
 # Desarrollo
-npm run dev
-
-# Producción
-npm start
+node .
 ```
 
 ## 💡 Uso
@@ -327,14 +324,12 @@ export NODE_OPTIONS="--max-old-space-size=4096"
 ## 📫 Soporte y Contacto
 
 ### 🆘 Obtener Ayuda
-- [Discord Server](https://discord.gg/tu-servidor)
 - [GitHub Issues](https://github.com/Rexyto/discord-copy-bot/issues)
-- Email: support@ejemplo.com
+
 
 ### 💬 Comunidad
-- [Discord Community](https://discord.gg/comunidad)
+
 - [Discussions](https://github.com/Rexyto/discord-copy-bot/discussions)
-- [Twitter](https://twitter.com/Rexyto)
 
 ## 📜 Información Legal
 
