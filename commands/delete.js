@@ -53,11 +53,17 @@ module.exports = {
       collector.on('collect', async i => {
         try {
           await i.deferUpdate();
-          const selectedServer = servers.find(s => s.id.toString() === i.values[0]);
+          const selectedId = i.values[0];
+          const selectedServer = servers.find(s => s.id.toString() === selectedId);
           
-          await deleteServer(selectedServer.id);
-          const completionEmbed = createServerDeletedEmbed(selectedServer.name);
+          if (!selectedServer) {
+            throw new Error('Servidor no encontrado');
+          }
 
+          // Solo eliminar el servidor seleccionado
+          await deleteServer(selectedId);
+          
+          const completionEmbed = createServerDeletedEmbed(selectedServer.name);
           await interaction.editReply({
             embeds: [completionEmbed],
             components: []

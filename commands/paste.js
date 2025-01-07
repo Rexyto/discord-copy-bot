@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, StringSelectMenuBuilder, ChannelType } = require('discord.js');
 const { getServers } = require('../utils/database');
 const { 
   createServerListEmbed, 
@@ -7,6 +7,35 @@ const {
   createErrorEmbed,
   EMOJIS 
 } = require('../utils/embeds');
+
+async function findWritableChannel(guild) {
+  // Primero buscar en canales de texto
+  const textChannels = guild.channels.cache.filter(
+    channel => channel.type === ChannelType.GuildText && 
+    channel.permissionsFor(guild.members.me).has('SendMessages')
+  );
+  
+  if (textChannels.size > 0) {
+    return textChannels.first();
+  }
+
+  // Si no hay canales de texto, crear uno nuevo
+  try {
+    return await guild.channels.create({
+      name: 'general',
+      type: ChannelType.GuildText,
+      permissionOverwrites: [
+        {
+          id: guild.roles.everyone.id,
+          allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory']
+        }
+      ]
+    });
+  } catch (error) {
+    console.error('Error al crear canal:', error);
+    return null;
+  }
+}
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -56,6 +85,7 @@ module.exports = {
       const collector = reply.createMessageComponentCollector({ filter, time: 60000 });
 
       collector.on('collect', async i => {
+        let progressMessage = null;
         try {
           await i.deferUpdate();
           const selectedServer = servers.find(s => s.id.toString() === i.values[0]);
@@ -70,11 +100,25 @@ module.exports = {
             'Restaurando Servidor',
             `${EMOJIS.LOADING} Eliminando configuración actual...`
           );
-          
-          await i.editReply({ 
-            embeds: [progressEmbed],
-            components: []
+
+          // Encontrar un canal donde podamos escribir
+          const channel = await findWritableChannel(guild);
+          if (!channel) {
+            throw new Error('No se pudo encontrar ni crear un canal para escribir mensajes');
+          }
+
+          progressMessage = await channel.send({ 
+            embeds: [progressEmbed]
           });
+
+          // Primero, actualizar permisos de @everyone
+          if (serverData.everyonePerms) {
+            try {
+              await guild.roles.everyone.setPermissions(BigInt(serverData.everyonePerms));
+            } catch (error) {
+              console.error('Error al actualizar permisos de @everyone:', error);
+            }
+          }
 
           // Eliminar roles existentes
           const roles = await guild.roles.fetch();
@@ -88,28 +132,35 @@ module.exports = {
             }
           }
 
-          // Eliminar canales existentes
-          for (const [id, channel] of guild.channels.cache) {
-            try {
-              await channel.delete();
-            } catch (error) {
-              console.error(`No se pudo eliminar el canal ${channel.name}:`, error);
+          // Eliminar canales existentes (excepto el que estamos usando)
+          for (const [id, chan] of guild.channels.cache) {
+            if (chan.id !== channel.id) {
+              try {
+                await chan.delete();
+              } catch (error) {
+                console.error(`No se pudo eliminar el canal ${chan.name}:`, error);
+              }
             }
           }
 
-          // Esperar 1 segundo
+          // Esperar 1 segundo para asegurar que todo se eliminó
           await new Promise(resolve => setTimeout(resolve, 1000));
 
-          // Crear roles
+          // Crear roles y mantener un mapeo de IDs
+          const roleMap = new Map();
+          roleMap.set(guild.roles.everyone.id, guild.roles.everyone.id);
+
           for (const roleData of serverData.roles.sort((a, b) => b.position - a.position)) {
+            if (roleData.isEveryone) continue;
             try {
-              await guild.roles.create({
+              const newRole = await guild.roles.create({
                 name: roleData.name,
                 color: roleData.color,
                 hoist: roleData.hoist,
                 permissions: BigInt(roleData.permissions),
                 position: roleData.position
               });
+              roleMap.set(roleData.id, newRole.id);
             } catch (error) {
               console.error(`No se pudo crear el rol ${roleData.name}:`, error);
             }
@@ -118,32 +169,37 @@ module.exports = {
           // Crear categorías y canales
           for (const categoryData of serverData.categories) {
             try {
+              const updatedCategoryPermissions = categoryData.permissions.map(perm => ({
+                id: perm.isEveryone ? guild.roles.everyone.id : 
+                    (perm.isRole ? roleMap.get(perm.id) || perm.id : perm.id),
+                type: perm.type,
+                allow: BigInt(perm.allow),
+                deny: BigInt(perm.deny)
+              }));
+
               const category = await guild.channels.create({
                 name: categoryData.name,
-                type: 4,
+                type: ChannelType.GuildCategory,
                 position: categoryData.position,
-                permissionOverwrites: categoryData.permissions.map(perm => ({
-                  id: perm.id,
+                permissionOverwrites: updatedCategoryPermissions
+              });
+
+              for (const channelData of categoryData.channels) {
+                const updatedChannelPermissions = channelData.permissions.map(perm => ({
+                  id: perm.isEveryone ? guild.roles.everyone.id : 
+                      (perm.isRole ? roleMap.get(perm.id) || perm.id : perm.id),
                   type: perm.type,
                   allow: BigInt(perm.allow),
                   deny: BigInt(perm.deny)
-                }))
-              });
+                }));
 
-              // Crear canales en la categoría
-              for (const channelData of categoryData.channels) {
                 await guild.channels.create({
                   name: channelData.name,
                   type: channelData.type,
                   parent: category.id,
                   topic: channelData.topic,
                   position: channelData.position,
-                  permissionOverwrites: channelData.permissions.map(perm => ({
-                    id: perm.id,
-                    type: perm.type,
-                    allow: BigInt(perm.allow),
-                    deny: BigInt(perm.deny)
-                  }))
+                  permissionOverwrites: updatedChannelPermissions
                 });
               }
             } catch (error) {
@@ -151,28 +207,48 @@ module.exports = {
             }
           }
 
+          // Eliminar el canal temporal si fue creado por nosotros
+          if (channel.name === 'general' && channel.createdTimestamp > interaction.createdTimestamp) {
+            try {
+              await channel.delete();
+            } catch (error) {
+              console.error('Error al eliminar canal temporal:', error);
+            }
+          }
+
           const completionEmbed = createServerRestoreEmbed(selectedServer.name, serverData);
-          await i.editReply({ embeds: [completionEmbed] });
+          await interaction.followUp({ 
+            embeds: [completionEmbed],
+            ephemeral: true
+          });
+
         } catch (error) {
           console.error(error);
           const errorEmbed = createErrorEmbed(
             'Error al Restaurar',
             'Se produjo un error al restaurar la configuración del servidor.'
           );
-          await i.editReply({ embeds: [errorEmbed], components: [] });
+          await interaction.followUp({ 
+            embeds: [errorEmbed], 
+            ephemeral: true 
+          });
         }
       });
 
-      collector.on('end', collected => {
+      collector.on('end', async (collected) => {
         if (collected.size === 0) {
           const timeoutEmbed = createErrorEmbed(
             'Tiempo Agotado',
             'Se agotó el tiempo para seleccionar un servidor.'
           );
-          interaction.editReply({
-            embeds: [timeoutEmbed],
-            components: []
-          }).catch(console.error);
+          try {
+            await interaction.followUp({
+              embeds: [timeoutEmbed],
+              ephemeral: true
+            });
+          } catch (error) {
+            console.error('Error al enviar mensaje de timeout:', error);
+          }
         }
       });
     } catch (error) {
@@ -184,7 +260,7 @@ module.exports = {
       if (!interaction.replied) {
         await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
       } else {
-        await interaction.editReply({ embeds: [errorEmbed] });
+        await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
       }
     }
   },

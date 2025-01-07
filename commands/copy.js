@@ -37,7 +37,8 @@ module.exports = {
         icon: guild.iconURL(),
         roles: [],
         channels: [],
-        categories: []
+        categories: [],
+        everyonePerms: guild.roles.everyone.permissions.bitfield.toString() // Guardar permisos de @everyone
       };
 
       // Copiar roles
@@ -45,16 +46,24 @@ module.exports = {
       const totalSteps = roles.size + guild.channels.cache.size;
       let currentStep = 0;
 
+      // Crear un mapa de roles para referencia posterior
+      const roleMap = new Map();
+      
       for (const [id, role] of roles) {
-        if (role.managed || role.name === '@everyone') continue;
+        if (role.managed) continue; // Solo saltamos roles manejados, pero incluimos @everyone
         
-        serverData.roles.push({
+        const roleData = {
+          id: role.id,
           name: role.name,
           color: role.color,
           hoist: role.hoist,
           permissions: role.permissions.bitfield.toString(),
-          position: role.position
-        });
+          position: role.position,
+          isEveryone: role.name === '@everyone'
+        };
+
+        serverData.roles.push(roleData);
+        roleMap.set(role.id, roleData);
 
         currentStep++;
         const progress = createProgressBar(currentStep, totalSteps);
@@ -67,31 +76,39 @@ module.exports = {
       // Copiar categorías y canales
       const categories = guild.channels.cache.filter(c => c.type === 4);
       for (const [id, category] of categories) {
+        const categoryPermissions = category.permissionOverwrites.cache.map(perm => ({
+          id: perm.id,
+          type: perm.type,
+          allow: perm.allow.bitfield.toString(),
+          deny: perm.deny.bitfield.toString(),
+          isRole: guild.roles.cache.has(perm.id),
+          isEveryone: perm.id === guild.roles.everyone.id
+        }));
+
         const categoryData = {
           name: category.name,
           position: category.position,
-          permissions: Array.from(category.permissionOverwrites.cache.values()).map(perm => ({
-            id: perm.id,
-            type: perm.type,
-            allow: perm.allow.bitfield.toString(),
-            deny: perm.deny.bitfield.toString()
-          })),
+          permissions: categoryPermissions,
           channels: []
         };
 
         const channelsInCategory = guild.channels.cache.filter(c => c.parentId === category.id);
         for (const [channelId, channel] of channelsInCategory) {
+          const channelPermissions = channel.permissionOverwrites.cache.map(perm => ({
+            id: perm.id,
+            type: perm.type,
+            allow: perm.allow.bitfield.toString(),
+            deny: perm.deny.bitfield.toString(),
+            isRole: guild.roles.cache.has(perm.id),
+            isEveryone: perm.id === guild.roles.everyone.id
+          }));
+
           categoryData.channels.push({
             name: channel.name,
             type: channel.type,
             position: channel.position,
             topic: channel.topic,
-            permissions: Array.from(channel.permissionOverwrites.cache.values()).map(perm => ({
-              id: perm.id,
-              type: perm.type,
-              allow: perm.allow.bitfield.toString(),
-              deny: perm.deny.bitfield.toString()
-            }))
+            permissions: channelPermissions
           });
 
           currentStep++;
