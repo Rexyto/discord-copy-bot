@@ -2,18 +2,18 @@
   "clientId": "TU_ID_DEL_BOT",
   "token": "TU_TOKEN_DEL_BOT",
   "database": {
-    "host": "localhost",
-    "user": "root",
-    "password": "tu_contraseña",
-    "database": "discord_copy_bot",
-    "port": 3306,
-    "connectionLimit": 10
+    "host": "TU_HOST_DE_BASE_DE_DATOS",
+    "user": "TU_USUARIO",
+    "password": "TU_CONTRASEÑA",
+    "database": "TU_BASE_DE_DATOS"
   },
   "settings": {
     "prefix": "!",
     "language": "es",
-    "timezone": "UTC",
-    "maxBackups": 10,
-    "backupRetention": 30
+    "backupChannel": "TU_ID_DEL_CANAL_DE_RESPALDO",
+    "maxBackups": 2,
+    "backupInterval": "1h",
+    "lastBackup": null,
+    "lastBackupContent": null
   }
 }

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Copy Bot - Panel de Control</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-indigo-900 min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-12 animate-fade-in">
+            <div class="flex items-center justify-center mb-4">
+                <i class="fas fa-robot text-6xl text-indigo-400 mr-4 animate-float"></i>
+                <h1 class="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
+                    Discord Copy Bot
+                </h1>
+            </div>
+            <p class="text-xl text-indigo-200" id="headerSubtitle">Panel de Control Avanzado</p>
+            
+            <!-- Language Selector -->
+            <div class="mt-4">
+                <select id="languageSelector" class="bg-gray-800 text-white rounded-lg px-4 py-2 border border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="en">🇬🇧 English</option>
+                </select>
+            </div>
+        </header>
+
+        <!-- Main Grid -->
+        <div class="grid lg:grid-cols-3 gap-8">
+            <!-- Stats Card -->
+            <div class="bg-gray-800 rounded-xl shadow-glow p-6 transform hover:scale-105 transition-all">
+                <h2 class="text-2xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-chart-bar text-indigo-400 mr-2"></i>
+                    <span class="lang" data-key="statistics">Estadísticas</span>
+                </h2>
+                <div id="statsContent" class="space-y-4 animate-fade-in">
+                    <!-- Stats will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Backups List -->
+            <div class="lg:col-span-2 bg-gray-800 rounded-xl shadow-glow p-6">
+                <h2 class="text-2xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-database text-indigo-400 mr-2"></i>
+                    <span class="lang" data-key="availableBackups">Backups Disponibles</span>
+                </h2>
+                <div id="backupsList" class="space-y-4 animate-fade-in">
+                    <!-- Backups will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Details Panel -->
+            <div class="lg:col-span-3 bg-gray-800 rounded-xl shadow-glow p-6">
+                <h2 class="text-2xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-info-circle text-indigo-400 mr-2"></i>
+                    <span class="lang" data-key="backupDetails">Detalles del Backup</span>
+                </h2>
+                <div id="backupDetails" class="space-y-4 animate-fade-in">
+                    <p class="text-indigo-200 lang" data-key="selectBackup">Selecciona un backup para ver sus detalles</p>
+                </div>
+            </div>
+
+            <!-- Role Permissions Modal -->
+            <div id="rolePermissionsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+                <div class="bg-gray-800 rounded-xl p-6 max-w-2xl w-full mx-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-bold text-indigo-300">
+                            <i class="fas fa-shield-alt mr-2"></i>
+                            <span class="lang" data-key="rolePermissions">Permisos del Rol</span>
+                        </h3>
+                        <button class="text-gray-400 hover:text-white" onclick="closeModal('rolePermissionsModal')">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    <div id="rolePermissionsContent" class="space-y-4">
+                        <!-- Permissions will be loaded here -->
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-4">
+                        <button class="btn-secondary lang" data-key="cancel" onclick="closeModal('rolePermissionsModal')">
+                            Cancelar
+                        </button>
+                        <button class="btn-primary lang" data-key="saveChanges" onclick="savePermissions()">
+                            Guardar Cambios
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Backup Modal -->
+            <div id="editBackupModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+                <div class="bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-bold text-indigo-300">
+                            <i class="fas fa-edit mr-2"></i>
+                            <span class="lang" data-key="editBackup">Editar Backup</span>
+                        </h3>
+                        <button class="text-gray-400 hover:text-white" onclick="closeModal('editBackupModal')">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-indigo-200 mb-2 lang" data-key="backupName">
+                                Nombre del Backup
+                            </label>
+                            <input type="text" id="editBackupName" class="input-primary w-full" />
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-4">
+                        <button class="btn-secondary lang" data-key="cancel" onclick="closeModal('editBackupModal')">
+                            Cancelar
+                        </button>
+                        <button class="btn-primary lang" data-key="saveChanges" onclick="saveBackupChanges()">
+                            Guardar Cambios
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delete Confirmation Modal -->
+            <div id="deleteConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+                <div class="bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-bold text-red-400">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            <span class="lang" data-key="confirmDelete">Confirmar Eliminación</span>
+                        </h3>
+                        <button class="text-gray-400 hover:text-white" onclick="closeModal('deleteConfirmModal')">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    <p class="text-indigo-200 mb-6 lang" data-key="deleteConfirmMessage">
+                        ¿Estás seguro de que quieres eliminar este backup? Esta acción no se puede deshacer.
+                    </p>
+                    <div class="flex justify-end space-x-4">
+                        <button class="btn-secondary lang" data-key="cancel" onclick="closeModal('deleteConfirmModal')">
+                            Cancelar
+                        </button>
+                        <button class="btn-danger lang" data-key="delete" onclick="confirmDelete()">
+                            Eliminar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="translations.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

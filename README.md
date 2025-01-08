@@ -44,15 +44,32 @@ Un bot de Discord potente y fácil de usar que permite hacer copias de seguridad
   - Backups seguros en base de datos
   - Cumplimiento con políticas de Discord
 
-### 💎 Características Premium
-- 📊 **Dashboard Web** (Próximamente)
-  - Interface intuitiva de gestión
-  - Estadísticas detalladas
-  - Panel de control personalizable
-- 🔄 **Backups Automáticos** (Próximamente)
-  - Programación de copias
-  - Rotación automática
-  - Notificaciones configurables
+### ⚡ Nuevas Características
+
+#### 🔄 Sistema de Backups Automáticos
+- Configurable mediante `/backups`
+- Intervalos personalizables:
+  - 1 backup: 24h, 12h, 6h, 3h
+  - 2 backups: 12h, 6h, 3h, 1h
+  - 3 backups: 8h, 4h, 2h, 1h
+  - 4 backups: 6h, 3h, 2h, 1h
+- Notificaciones en canal designado
+- Rotación automática de backups
+
+#### 🌐 Sistema de Idiomas
+- Soporte completo para Español e Inglés
+- Cambio de idioma mediante comando `/language`
+- Selector de idioma en el panel web
+- Traducciones para todos los textos y mensajes
+
+#### 💻 Panel Web Mejorado
+- Gestión avanzada de permisos por rol
+- Vista detallada de permisos por canal y categoría
+- Edición y eliminación de backups desde la web
+- Nuevas animaciones y efectos visuales
+- Tooltips informativos
+- Sistema de notificaciones mejorado
+- Interfaz más intuitiva y responsive
 
 ## 🚀 Instalación
 
@@ -101,21 +118,22 @@ nano config.json
   "clientId": "TU_ID_DEL_BOT",
   "token": "TU_TOKEN_DEL_BOT",
   "database": {
-    "host": "localhost",
-    "user": "root",
-    "password": "tu_contraseña",
-    "database": "discord_copy_bot",
-    "port": 3306,
-    "connectionLimit": 10
+    "host": "TU_HOST_DE_BASE_DE_DATOS",
+    "user": "TU_USUARIO",
+    "password": "TU_CONTRASEÑA",
+    "database": "TU_BASE_DE_DATOS"
   },
   "settings": {
     "prefix": "!",
     "language": "es",
-    "timezone": "UTC",
-    "maxBackups": 10,
-    "backupRetention": 30
+    "backupChannel": "TU_ID_DEL_CANAL_DE_RESPALDO",
+    "maxBackups": 2,
+    "backupInterval": "1h",
+    "lastBackup": null,
+    "lastBackupContent": null
   }
 }
+
 ```
 
 5. **Configura la Base de Datos**
@@ -154,6 +172,13 @@ node .
 | `/delete` | Elimina una copia | `/delete` | Admin |
 | `/list` | Lista todas las copias | `/list` | Admin |
 | `/info` | Muestra información de una copia | `/info nombre:MiBackup` | Admin |
+| `/backups` | Configura backups automáticos | `/backups #canal cantidad:1-4` | Admin |
+| `/web` | Abre el panel de control web | `/web` | Admin |
+| `/language` | Cambia el idioma del bot | `/language` | Admin |
+| `!back` | Muestra el último backup realizado | `!back` | Todos |
+| `!stats` | Muestra estadísticas del servidor | `!stats` | Todos |
+| `!help` | Muestra la ayuda del bot | `!help` | Todos |
+| `!ping` | Comprueba la latencia del bot | `!ping` | Todos |
 
 ### 📝 Ejemplos de Uso
 
