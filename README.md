@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Discord Server Copy Bot Banner](https://imgur.com/a/pLa2Gnv)
+![Discord Server Copy Bot Banner](https://i.imgur.com/a/pLa2Gnv)
 
 Un bot de Discord potente y fácil de usar que permite hacer copias de seguridad completas de la estructura de tu servidor.
 
